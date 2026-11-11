@@ -3,33 +3,31 @@ package com.tecsup.lab12_maps
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Text
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.Polygon
-import com.google.maps.android.compose.Polyline
-import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberMarkerState
+import com.google.maps.android.compose.*
 import kotlinx.coroutines.delay
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 
-// Función para dibujar un corazón con coordenadas
+// Crear corazones mediante polilíneas
 fun crearCorazon(
     latitud: Double,
     longitud: Double,
@@ -57,13 +55,11 @@ fun crearCorazon(
 @Composable
 fun MapScreen() {
 
-    // Ubicación inicial: Arequipa
+    // Ubicaciones principales
     val ArequipaLocation = LatLng(-16.4040102, -71.559611)
-
-    // Ubicación de destino: Yura
     val YuraLocation = LatLng(-16.2520984, -71.6836503)
 
-    // Configuración inicial de la cámara
+    // Configuración de cámara
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(
             ArequipaLocation,
@@ -71,19 +67,29 @@ fun MapScreen() {
         )
     }
 
-    // Controlar cuándo termina de cargar el mapa
+    // Estado de carga del mapa
     var mapaCargado by remember {
         mutableStateOf(false)
     }
 
-    // Animación de la cámara hacia Yura
+    // NUEVO: Tipo de mapa seleccionado
+    var tipoMapa by remember {
+        mutableStateOf(MapType.NORMAL)
+    }
+
+    // NUEVO: Propiedades del mapa
+    val propiedadesMapa = remember(tipoMapa) {
+        MapProperties(
+            mapType = tipoMapa
+        )
+    }
+
+    // Animación de Arequipa hacia Yura
     LaunchedEffect(mapaCargado) {
         if (mapaCargado) {
 
-            // Esperar 2 segundos mostrando Arequipa
             delay(2000)
 
-            // Mover la cámara hacia Yura con zoom
             cameraPositionState.animate(
                 update = CameraUpdateFactory.newLatLngZoom(
                     YuraLocation,
@@ -94,10 +100,9 @@ fun MapScreen() {
         }
     }
 
-    // Obtener contexto de la aplicación
+    // Cargar imagen del osito
     val context = LocalContext.current
 
-    // Cargar imagen personalizada del osito
     val bitmap = remember(context) {
         BitmapFactory.decodeResource(
             context.resources,
@@ -105,7 +110,7 @@ fun MapScreen() {
         )
     }
 
-    // Ajustar tamaño del osito a 150 x 250
+    // Tamaño 150 x 250
     val bitmapEscalado = remember(bitmap) {
         Bitmap.createScaledBitmap(
             bitmap,
@@ -115,14 +120,14 @@ fun MapScreen() {
         )
     }
 
-    // Lista de ubicaciones del laboratorio
+    // Marcadores del laboratorio
     val locations = listOf(
-        LatLng(-16.433415, -71.5442652), // JLByR
-        LatLng(-16.4205151, -71.4945209), // Paucarpata
-        LatLng(-16.3524187, -71.5675994) // Zamacola
+        LatLng(-16.433415, -71.5442652),
+        LatLng(-16.4205151, -71.4945209),
+        LatLng(-16.3524187, -71.5675994)
     )
 
-    // Polígono del Mall Aventura
+    // Polígono Mall Aventura
     val mallAventuraPolygon = listOf(
         LatLng(-16.432292, -71.509145),
         LatLng(-16.432757, -71.509626),
@@ -130,7 +135,7 @@ fun MapScreen() {
         LatLng(-16.432566, -71.508853)
     )
 
-    // Polígono del Parque Lambramani
+    // Polígono Parque Lambramani
     val parqueLambramaniPolygon = listOf(
         LatLng(-16.422704, -71.530830),
         LatLng(-16.422920, -71.531340),
@@ -138,7 +143,7 @@ fun MapScreen() {
         LatLng(-16.423050, -71.530600)
     )
 
-    // Polígono de la Plaza de Armas
+    // Polígono Plaza de Armas
     val plazaDeArmasPolygon = listOf(
         LatLng(-16.398866, -71.536961),
         LatLng(-16.398744, -71.536529),
@@ -146,12 +151,12 @@ fun MapScreen() {
         LatLng(-16.399299, -71.536721)
     )
 
-    // Puntos de ejemplo para las polilíneas
+    // Puntos de interés
     val plazaDeArmas = LatLng(-16.399000, -71.536625)
     val parqueLambramani = LatLng(-16.422984, -71.530970)
     val mallAventura = LatLng(-16.432700, -71.509250)
 
-    // Corazón 1: cerca de la Plaza de Armas
+    // Corazón rosado
     val corazon1 = remember {
         crearCorazon(
             -16.4000,
@@ -160,7 +165,7 @@ fun MapScreen() {
         )
     }
 
-    // Corazón 2: cerca del Parque Lambramani
+    // Corazón rojo
     val corazon2 = remember {
         crearCorazon(
             -16.4250,
@@ -169,20 +174,22 @@ fun MapScreen() {
         )
     }
 
-    // Mostrar el mapa
     Box(modifier = Modifier.fillMaxSize()) {
 
+        // Mostrar Google Maps
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
 
-            // Detectar cuando termina de cargar
+            // NUEVO: Aplicar tipo de mapa
+            properties = propiedadesMapa,
+
             onMapLoaded = {
                 mapaCargado = true
             }
         ) {
 
-            // Marcador personalizado en Arequipa
+            // Marcador personalizado
             Marker(
                 state = rememberMarkerState(
                     position = ArequipaLocation
@@ -193,7 +200,7 @@ fun MapScreen() {
                 title = "Arequipa, Perú"
             )
 
-            // Añadir varios marcadores
+            // Marcadores adicionales
             locations.forEach { location ->
                 Marker(
                     state = rememberMarkerState(
@@ -204,7 +211,7 @@ fun MapScreen() {
                 )
             }
 
-            // Polígono de Plaza de Armas
+            // Polígono Plaza de Armas
             Polygon(
                 points = plazaDeArmasPolygon,
                 strokeColor = Color.Red,
@@ -212,7 +219,7 @@ fun MapScreen() {
                 strokeWidth = 5f
             )
 
-            // Polígono de Parque Lambramani
+            // Polígono Parque Lambramani
             Polygon(
                 points = parqueLambramaniPolygon,
                 strokeColor = Color.Red,
@@ -220,7 +227,7 @@ fun MapScreen() {
                 strokeWidth = 5f
             )
 
-            // Polígono de Mall Aventura
+            // Polígono Mall Aventura
             Polygon(
                 points = mallAventuraPolygon,
                 strokeColor = Color.Red,
@@ -228,7 +235,7 @@ fun MapScreen() {
                 strokeWidth = 5f
             )
 
-            // Polilínea 1: Plaza de Armas a Lambramani
+            // Polilínea Plaza de Armas - Lambramani
             Polyline(
                 points = listOf(
                     plazaDeArmas,
@@ -238,7 +245,7 @@ fun MapScreen() {
                 width = 8f
             )
 
-            // Polilínea 2: Lambramani a Mall Aventura
+            // Polilínea Lambramani - Mall Aventura
             Polyline(
                 points = listOf(
                     parqueLambramani,
@@ -248,7 +255,7 @@ fun MapScreen() {
                 width = 8f
             )
 
-            // Polilínea 3: Mall Aventura a Paucarpata
+            // Polilínea Mall Aventura - Paucarpata
             Polyline(
                 points = listOf(
                     mallAventura,
@@ -258,19 +265,66 @@ fun MapScreen() {
                 width = 8f
             )
 
-            // Corazón 1: rosado
+            // Corazón rosado
             Polyline(
                 points = corazon1,
                 color = Color.Magenta,
                 width = 12f
             )
 
-            // Corazón 2: rojo
+            // Corazón rojo
             Polyline(
                 points = corazon2,
                 color = Color.Red,
                 width = 12f
             )
+        }
+
+        // NUEVO: Botones para cambiar el tipo de mapa
+        Row(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .fillMaxWidth()
+                .padding(top = 36.dp, start = 8.dp, end = 8.dp)
+                .background(
+                    Color.White.copy(alpha = 0.95f),
+                    RoundedCornerShape(16.dp)
+                )
+                .horizontalScroll(rememberScrollState())
+                .padding(6.dp),
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+
+            val opciones = listOf(
+                "Normal" to MapType.NORMAL,
+                "Satélite" to MapType.SATELLITE,
+                "Híbrido" to MapType.HYBRID,
+                "Terreno" to MapType.TERRAIN
+            )
+
+            opciones.forEach { (nombre, tipo) ->
+
+                Button(
+                    onClick = {
+                        tipoMapa = tipo
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (tipoMapa == tipo)
+                            Color(0xFF7B2CBF)
+                        else
+                            Color(0xFF242424)
+                    ),
+                    contentPadding = PaddingValues(
+                        horizontal = 12.dp,
+                        vertical = 6.dp
+                    )
+                ) {
+                    Text(
+                        text = nombre,
+                        color = Color.White
+                    )
+                }
+            }
         }
     }
 }
